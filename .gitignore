@@ -1,0 +1,25 @@
+# Gradle specific files
+.gradle/
+build/
+
+# IDE files
+.idea/
+.vscode/
+
+# Compiled Java classes
+*.class
+
+# Compiled Kotlin classes
+*.kotlin_class
+
+# Log files
+*.log
+
+# Package files
+*.jar
+*.war
+*.ear
+
+# Dependency lock files
+!gradle-wrapper.jar
+!gradle-wrapper.properties

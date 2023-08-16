@@ -1,0 +1,124 @@
+spring:
+  profiles:
+    include:
+      - comm
+---
+server:
+  config:
+    activate:
+      on-profile: prod
+  port: 8080
+  error.include-message: always
+  tomcat:
+    max-swallow-size: -1
+  host:
+    adminApi: http://profile-box-api-admin.default.svc.local:8080
+    commApi: http://profile-box-comm.default.svc.local:8080
+---
+logging:
+  level:
+    root: DEBUG
+
+api:
+  common:
+    version: 1.0.0
+    title: Profile Box User API
+    description: Profile Box User API
+    termsOfServiceUrl:
+    license: License
+    licenseUrl: MY LICENSE URL
+
+    contact:
+      name: Contact
+      url: My
+      email: me@mail.com
+
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_fetch_size: 1000
+
+---
+server:
+  config:
+    activate:
+      on-profile: local
+  port: 7001
+  error.include-message: always
+  tomcat:
+    max-swallow-size: -1
+  host:
+    adminApi: http://localhost:7002
+    commApi: http://localhost:7003
+
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/profile_box
+    username: admin
+    password: admin
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: myGroup
+
+
+#
+#spring:
+#  config:
+#    activate:
+#      on-profile: local
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/profile_box
+#    username: admin
+#    password: admin
+#
+#custom:
+#  config:
+#    activate:
+#      on-profile: local
+#  storage:
+#    filePath: /Users/hyenee/Downloads/workspace/goorm/msa/storage/files/
+#    imagePath: images/
+#    videoPath: videos/
+#---
+#server:
+#  config:
+#    activate:
+#      on-profile: prod
+#  port: 8080
+#  error.include-message: always
+#  tomcat:
+#    max-swallow-size: -1
+#
+#spring:
+#  config:
+#    activate:
+#      on-profile: prod
+#  datasource:
+#    #    url: jdbc:postgresql://docker.for.mac.host.internal:5432/profile_box
+#    #    username: admin
+#    #    password: admin
+#    url: jdbc:postgresql://rds-profilehub2.c28euk17mhxq.ap-northeast-2.rds.amazonaws.com:5432/profilehub
+#    username: cacao
+#    password: cacaocacao
+#
+#custom:
+#  config:
+#    activate:
+#      on-profile: prod
+#  storage:
+#    filePath: /storage/files/
+#    imagePath: images/
+#    videoPath: videos/
