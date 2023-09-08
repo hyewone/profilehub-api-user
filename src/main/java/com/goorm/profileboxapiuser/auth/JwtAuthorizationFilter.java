@@ -1,82 +1,88 @@
 package com.goorm.profileboxapiuser.auth;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.goorm.profileboxapiuser.service.MemberService;
+import com.goorm.profileboxcomm.auth.JwtProperties;
+import com.goorm.profileboxcomm.auth.JwtProvider;
 import com.goorm.profileboxcomm.entity.Member;
 import com.goorm.profileboxcomm.exception.ApiExceptionEntity;
 import com.goorm.profileboxcomm.exception.ExceptionEnum;
 import com.goorm.profileboxcomm.response.ApiResult;
 import com.goorm.profileboxcomm.response.ApiResultType;
-import com.goorm.profileboxcomm.service.MemberRedisService;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 
 public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
 
     private final MemberService memberService;
-    private MemberRedisService memberRedisService;
-    private JwtProvider jwtProvider;
+    private final JwtProvider jwtProvider;
+    private final RestTemplate restTemplate;
 
-    public JwtAuthorizationFilter(AuthenticationManager authenticationManager, MemberService memberService, JwtProvider jwtProvider, MemberRedisService memberRedisService) {
+    public JwtAuthorizationFilter(AuthenticationManager authenticationManager, MemberService memberService, JwtProvider jwtProvider, RestTemplate restTemplate) {
         super(authenticationManager);
         this.memberService = memberService;
-        this.memberRedisService = memberRedisService;
         this.jwtProvider = jwtProvider;
+        this.restTemplate = restTemplate;
     }
 
-    @SneakyThrows
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) {
-        //        String jwtToken = jwtProvider.getJwtAccessTokenFromCookie(request);
-        String jwtToken = jwtProvider.getJwtAccessTokenFromHeader(request);
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
 
+        String jwtToken = jwtProvider.getJwtAccessTokenFromHeader(request)
+                .orElse("");
 
-        if (jwtToken.equals("")) {
+        if(jwtToken.equals("")){
             chain.doFilter(request, response);
             return;
         }
-        String email = JWT.require(Algorithm.HMAC512(JwtProperties.SECRET)).build().verify(jwtToken).getClaim("email").asString();
 
-        if (email != null) {
-            Member member = memberRedisService.getMemberFromRedis(jwtToken);
-            if(member == null){
-                member = memberService.findLoginMemberByEmail(email);
-//                member = memberService.findLoginMemberByEmail(email, jwtToken);
-            }
-            PrincipalDetails princialDetails = new PrincipalDetails(member);
-            Authentication authentication = new UsernamePasswordAuthenticationToken(princialDetails, null, princialDetails.getAuthorities());
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.AUTHORIZATION, JwtProperties.TOKEN_PREFIX + jwtToken);
+        HttpEntity<?> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> authResponse = restTemplate.exchange(
+                "http://localhost:7002" + "/v1/auth/verify",
+                HttpMethod.GET,
+                entity,
+                String.class
+        );
+
+        // auth 서버 응답을 처리
+        if (authResponse.getStatusCode().is2xxSuccessful()) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.registerModule(new JavaTimeModule());
+
+            Member member = objectMapper.readValue(authResponse.getBody(), Member.class);
+            Collection<GrantedAuthority> authorities = new ArrayList<>();
+            authorities.add(new SimpleGrantedAuthority(member.getMemberType().toString()));
+
+            Authentication authentication = new UsernamePasswordAuthenticationToken(member, member.getMemberEmail(), authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             chain.doFilter(request, response);
+        }else{
+            chain.doFilter(request, response);
         }
-    }
-
-    protected String getResponseErrorString(Exception e, ExceptionEnum exceptionEnum) throws JsonProcessingException {
-        ApiExceptionEntity apiExceptionEntity = ApiExceptionEntity.builder()
-                .errorMessage(e.getMessage())
-                .build();
-        e.printStackTrace();
-        ResponseEntity re = ResponseEntity
-                .status(exceptionEnum.getStatus())
-                .body(ApiResult.builder()
-                        .status(ApiResultType.ERROR.toString())
-                        .statusCode(exceptionEnum.getStatus().value())
-                        .message(apiExceptionEntity.getErrorMessage())
-                        .build());
-
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        String resStr = objectMapper.writeValueAsString(re);
-        return resStr;
     }
 }

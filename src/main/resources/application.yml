@@ -3,27 +3,12 @@ spring:
     include:
       - comm
 ---
-server:
-  config:
-    activate:
-      on-profile: prod
-  port: 8080
-  error.include-message: always
-  tomcat:
-    max-swallow-size: -1
-  host:
-    adminApi: https://profile-box-api-admin.api-admin.svc.cluster.local:8080
----
-logging:
-  level:
-    root: DEBUG
-
 api:
   common:
     version: 1.0.0
     title: Profile Box User API
     description: Profile Box User API
-    termsOfServiceUrl:
+    termsOfServiceUrl: ㅇ
     license: License
     licenseUrl: MY LICENSE URL
     contact:
@@ -44,7 +29,24 @@ spring:
       hibernate:
         format_sql: true
         default_batch_fetch_size: 1000
+---
+server:
+  config:
+    activate:
+      on-profile: prod
+  port: 8080
+  error.include-message: always
+  tomcat:
+    max-swallow-size: -1
+#  host:
+#    adminApi: https://profile-box-api-admin.api-admin.svc.cluster.local:8080
 
+logging:
+  config:
+    activate:
+      on-profile: prod
+  level:
+    root: ERROR
 ---
 server:
   config:
@@ -54,22 +56,17 @@ server:
   error.include-message: always
   tomcat:
     max-swallow-size: -1
-  host:
-    adminApi: http://localhost:7002
 
-spring:
+logging:
   config:
     activate:
       on-profile: local
-  datasource:
-    url: jdbc:postgresql://localhost:5432/profile_box
-    username: admin
-    password: admin
-  data:
-    redis:
-      host: localhost
-      port: 6379
-#  kafka:
-#    bootstrap-servers: localhost:9092
-#    consumer:
-#      group-id: myGroup
+  level:
+    root: DEBUG
+
+custom:
+  config:
+    activate:
+      on-profile: local
+  host:
+    authApi: http://localhost:7002
