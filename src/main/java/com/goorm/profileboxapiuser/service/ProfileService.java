@@ -37,8 +37,8 @@ public class ProfileService {
     private final FileHandler fileHandler;
 
     public Page<Profile> getAllProfile(SelectProfileListRequestDto requestDto) {
-        int offset = requestDto.getOffset() < 1 ? 0 : requestDto.getOffset() - 1 ;
-        int limit = requestDto.getLimit() < 1 ? 10 : requestDto.getLimit();
+        int offset = requestDto.getOffset() ;
+        int limit = requestDto.getLimit();
         String sortKey = requestDto.getSortKey();
         Sort.Direction sortDirection = getSrotDirection(requestDto.getSortDirection());
         return profileRepository.findAll(PageRequest.of(offset, limit, Sort.by(sortDirection, sortKey)));

@@ -10,6 +10,8 @@ import com.goorm.profileboxcomm.exception.ApiException;
 import com.goorm.profileboxcomm.exception.ExceptionEnum;
 import com.goorm.profileboxcomm.response.ApiResult;
 import com.goorm.profileboxcomm.response.ApiResultType;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
@@ -23,12 +25,14 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 
+@Tag(name = "Profile")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1")
-public class ProfileApiController {
+public class ProfileController {
     private final ProfileService profileService;
 
+    @Operation(summary = "프로필 리스트 조회")
     @GetMapping("/open/profiles")
     public ApiResult<List<SelectProfileResponseDto>> getProfiles(@ModelAttribute SelectProfileListRequestDto requestDto) {
         Page<Profile> profiles = profileService.getAllProfile(requestDto);
@@ -40,6 +44,7 @@ public class ProfileApiController {
     }
 
 //    @GetMapping("/open/profile/filmoName/{filmoName}")
+//@       Operation(summary = "Filmo로 프로필 리스트 조회")
 //    public ApiResult<List<SelectProfileResponseDto>> findProfilesByFilmoName(@PathVariable String filmoName, @ModelAttribute SelectProfileListByFilmoRequestDto requestDto) {
 //        requestDto.setFilmoName(filmoName);
 //        Page<Profile> profiles = profileService.getProfileByFilmoName(requestDto);
@@ -51,6 +56,8 @@ public class ProfileApiController {
 //    }
 
 //    @PreAuthorize("hasAnyAuthority('ADMIN','PRODUCER','ACTOR')")
+
+    @Operation(summary = "프로필 조회")
     @GetMapping("/open/profile/{profileId}")
     public ApiResult<SelectProfileResponseDto> getProfile(@PathVariable Long profileId){
         Profile profile = profileService.getProfileByProfileId(profileId);
@@ -59,6 +66,8 @@ public class ProfileApiController {
     }
 
 
+
+    @Operation(summary = "프로필 작성")
     @PreAuthorize("hasAnyAuthority('ACTOR')")
     @PostMapping("/profile")
     public ApiResult<Long> addProfile(@Valid @RequestPart(value = "data") CreateProfileRequestDto profileDto,
@@ -74,6 +83,7 @@ public class ProfileApiController {
     }
 
 
+    @Operation(summary = "프로필 수정")
     @PreAuthorize("hasAnyAuthority('ACTOR')")
     @PatchMapping("/profile/{profileId}")
     public ApiResult<SelectProfileResponseDto> updateProfile(@PathVariable Long profileId, @Valid @RequestPart(value = "data") CreateProfileRequestDto profileDto){
@@ -82,6 +92,7 @@ public class ProfileApiController {
         return ApiResult.getResult(ApiResultType.SUCCESS, "프로필 수정", result);
     }
 
+    @Operation(summary = "프로필 삭제")
     @PreAuthorize("hasAnyAuthority('ADMIN','ACTOR')")
     @DeleteMapping("/profile/{profileId}")
     public ApiResult deleteProfile(@PathVariable Long profileId){
@@ -89,6 +100,7 @@ public class ProfileApiController {
         return ApiResult.getResult(ApiResultType.SUCCESS, "프로필 삭제", null);
     }
 
+    @Operation(summary = "이미지 삭제")
     @PreAuthorize("hasAnyAuthority('ADMIN','ACTOR')")
     @DeleteMapping("/profile/image/{imageId}")
     public ApiResult deleteImage(@PathVariable Long imageId){
@@ -96,6 +108,7 @@ public class ProfileApiController {
         return ApiResult.getResult(ApiResultType.SUCCESS, "이미지 삭제", null);
     }
 
+    @Operation(summary = "비디오 삭제")
     @PreAuthorize("hasAnyAuthority('ADMIN','ACTOR')")
     @DeleteMapping("/profile/video/{videoId}")
     public ApiResult deleteVideo(@PathVariable Long videoId){
@@ -103,6 +116,7 @@ public class ProfileApiController {
         return ApiResult.getResult(ApiResultType.SUCCESS, "비디오 삭제", null);
     }
 
+    @Operation(summary = "필모 삭제")
     @PreAuthorize("hasAnyAuthority('ADMIN','ACTOR')")
     @DeleteMapping("/profile/filmo/{filmoId}")
     public ApiResult deleteFilmo(@PathVariable Long filmoId){
@@ -110,10 +124,16 @@ public class ProfileApiController {
         return ApiResult.getResult(ApiResultType.SUCCESS, "필모그래피 삭제", null);
     }
 
+    @Operation(summary = "링크 삭제")
     @PreAuthorize("hasAnyAuthority('ADMIN','ACTOR')")
     @DeleteMapping("/profile/link/{linkId}")
     public ApiResult deleteLink(@PathVariable Long linkId){
         profileService.deleteLink(linkId);
         return ApiResult.getResult(ApiResultType.SUCCESS, "링크 삭제", null);
     }
+
+//    @ApiResponses(value = {
+//            @ApiResponse(responseCode = "200", description = "successful operation", content = @Content(schema = @Schema(implementation = SelectProfileResponseDto.class))),
+//            @ApiResponse(responseCode = "400", description = "bad request operation", content = @Content(schema = @Schema(implementation = SelectProfileResponseDto.class)))
+//    })
 }

@@ -61,10 +61,10 @@ public class ProfileBoxApiUserApplication {
 					.components(components)
 					.addSecurityItem(securityRequirement)
 					.info(new Info()
-							.title("My Application API")
+							.title("ProfileHub API")
 							.version("1.0.0")
-							.description("This is a sample Spring Boot RESTful service using springdoc-openapi and OpenAPI 3.")
-							.contact(new Contact().name("John Doe").email("johndoe@example.com")));
+							.description("ProfileHub API")
+							.contact(new Contact().name("hyewone").email("hyeneeOh@gmail.com")));
 	}
 
 	public static void main(String[] args) {
