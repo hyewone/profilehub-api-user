@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -62,21 +63,17 @@ public class ProfileService {
     }
 
     @Transactional
-    public Long addProfile(CreateProfileRequestDto profileDto, List<MultipartFile> images, List<MultipartFile> videos) {
-        Member member = memberRepository.findMemberByMemberId(profileDto.getMemberId())
-                .orElseThrow(() -> new ApiException(ExceptionEnum.MEMBER_NOT_FOUND));
-
+    public Long addProfile(CreateProfileRequestDto profileDto, List<MultipartFile> images, List<MultipartFile> videos, Member member) {
         if(existsProfileByMemberId(member)){
             throw new ApiException(ExceptionEnum.PROFILE_ALREADY_EXIST);
         }
 
+        // 프로필 저장
         Profile profile = Profile.createProfile(profileDto, member);
         profileRepository.save(profile);
 
+        // 이미지 저장
         if (images != null & !images.get(0).getOriginalFilename().isEmpty()) {
-            if (profileDto.getDefaultImageIdx() < 0 || profileDto.getDefaultImageIdx() > images.size() - 1) {
-                profileDto.setDefaultImageIdx(0);
-            }
             List<Image> imageList = new ArrayList<>();
             List<CreateImageRequestDto> imageDtoList = images.stream()
                     .map(o -> fileHandler.imageWrite(o))
@@ -85,14 +82,13 @@ public class ProfileService {
                 CreateImageRequestDto dto = imageDtoList.get(idx);
                 Image image = Image.createImage(dto, profile);
                 imageList.add(image);
-                if (idx == profileDto.getDefaultImageIdx()) {
-                    profile.setDefaultImageId(image.getImageId());
-                }
             }
             profileRepository.save(profile);
             imageRepository.saveAll(imageList);
+            profile.setDefaultImageId(imageList.get(0).getImageId());
         }
 
+        // 비디오 저장
         if (videos != null & !videos.get(0).getOriginalFilename().isEmpty()) {
             List<Video> videoList = new ArrayList<>();
             List<CreateVideoRequestDto> videoDtoList = videos.stream()
@@ -104,6 +100,7 @@ public class ProfileService {
             videoRepository.saveAll(videoList);
         }
 
+        // 필모 저장
         if (profileDto.getFilmos() != null & profileDto.getFilmos().size() > 0) {
             List<Filmo> filmoList = new ArrayList<>();
             for (CreateFilmoRequestDto dto : profileDto.getFilmos()) {
@@ -112,6 +109,7 @@ public class ProfileService {
             filmoRepository.saveAll(filmoList);
         }
 
+        // 링크 저장
         if (profileDto.getLinks() != null & profileDto.getLinks().size() > 0) {
             List<Link> linkList = new ArrayList<>();
             for (CreateLinkRequestDto dto : profileDto.getLinks()) {
@@ -123,72 +121,101 @@ public class ProfileService {
     }
 
     @Transactional
-    public Profile updateProfile(Long profileId, CreateProfileRequestDto profileDto) {
-        Profile profile = profileRepository.findProfileByProfileId(profileId)
+    public Long updateProfile(Long profileId, CreateProfileRequestDto profileDto, Member member) {
+        Profile profile = profileRepository.findProfileByProfileIdAndMember(profileId, member)
                 .orElseThrow(() -> new ApiException(ExceptionEnum.PROFILE_NOT_FOUND));
-//        if (patchRequest.getName() != null) {
-////        user.setName(patchRequest.getName());
-////    }
-        profile = profileRepository.save(profile);
-        return profile;
+        profile.setTitle(profileDto.getTitle());
+        profile.setContent(profileDto.getContent());
+        profileRepository.save(profile);
+        return profile.getProfileId();
     }
 
     @Transactional
-    public void deleteProfile(Long profileId) {
-
+    public void deleteProfile(Long profileId, Authentication authentication) {
+        Member member = (Member) authentication.getPrincipal();
         Profile profile = profileRepository.findProfileByProfileId(profileId)
                 .orElseThrow(() -> new ApiException(ExceptionEnum.PROFILE_NOT_FOUND));
+        Long memberId = profile.getMember().getMemberId();
+        boolean isDelete = isAdmin(authentication) || member.getMemberId().equals(memberId);
 
-//        imageRepository.findImagesByProfile(profile)
-//                .ifPresent(images -> {
-//                    images.stream().peek(image -> fileHandler.deleteFile(image.getFilePath()));
-//                });
+        if (isDelete) {
+            imageRepository.findImagesByProfile(profile)
+                    .ifPresent(images -> {
+                        images.forEach(image -> fileHandler.deleteFile(image.getFilePath()));
+                    });
 
-        imageRepository.findImagesByProfile(profile)
-                .ifPresent(images -> {
-                    images.forEach(image -> fileHandler.deleteFile(image.getFilePath()));
-                });
+            videoRepository.findVideosByProfile(profile)
+                    .ifPresent(videos -> {
+                        videos.forEach(video -> fileHandler.deleteFile(video.getFilePath()));
+                    });
 
-        videoRepository.findVideosByProfile(profile)
-                .ifPresent(videos -> {
-                    videos.stream().peek(video -> fileHandler.deleteFile(video.getFilePath()));
-                });
-
-        profileRepository.deleteByProfileId(profileId);
+            profileRepository.deleteByProfileId(profileId);
+        }
     }
 
     @Transactional
-    public void deleteImage(Long imageId) {
+    public void deleteImage(Long imageId, Authentication authentication) {
+        Member member = (Member) authentication.getPrincipal();
         Image image = imageRepository.findImageByImageId(imageId)
                 .orElseThrow(() -> new ApiException(ExceptionEnum.IMAGE_NOT_FOUND));
+        Long memberId = image.getProfile().getMember().getMemberId();
 
-        fileHandler.deleteFile(image.getFilePath());
-        imageRepository.deleteByImageId(imageId);
+        boolean isDelete = isAdmin(authentication) || member.getMemberId().equals(memberId);
+
+        if (isDelete) {
+            imageRepository.deleteByImageId(imageId);
+            profileRepository.findProfileByDefaultImageId(imageId)
+                    .ifPresent(profile -> {
+                        imageRepository.findImagesByProfile(profile)
+                                .ifPresentOrElse(images -> profile.setDefaultImageId(images.get(0).getImageId()),
+                                                     () -> profile.setDefaultImageId(null));
+                        profileRepository.save(profile);
+                    });
+            fileHandler.deleteFile(image.getFilePath());
+        }
     }
 
     @Transactional
-    public void deleteVideo(Long videoId) {
+    public void deleteVideo(Long videoId, Authentication authentication) {
+        Member member = (Member) authentication.getPrincipal();
         Video video = videoRepository.findVideoByVideoId(videoId)
                 .orElseThrow(() -> new ApiException(ExceptionEnum.VIDEO_NOT_FOUND));
+        Long memberId = video.getProfile().getMember().getMemberId();
 
-        fileHandler.deleteFile(video.getFilePath());
-        videoRepository.deleteByVideoId(videoId);
+        boolean isDelete = isAdmin(authentication) || member.getMemberId().equals(memberId);
+
+        if (isDelete) {
+            fileHandler.deleteFile(video.getFilePath());
+            videoRepository.deleteByVideoId(videoId);
+        }
     }
 
     @Transactional
-    public void deleteFilmo(Long filmoId) {
-        filmoRepository.findFilmoByFilmoId(filmoId)
+    public void deleteFilmo(Long filmoId, Authentication authentication) {
+        Member member = (Member) authentication.getPrincipal();
+        Filmo filmo = filmoRepository.findFilmoByFilmoId(filmoId)
                 .orElseThrow(() -> new ApiException(ExceptionEnum.FILMO_NOT_FOUND));
+        Long memberId = filmo.getProfile().getMember().getMemberId();
 
-        filmoRepository.deleteByFilmoId(filmoId);
+        boolean isDelete = isAdmin(authentication) || member.getMemberId().equals(memberId);
+
+        if (isDelete) {
+            filmoRepository.deleteByFilmoId(filmoId);
+        }
     }
 
     @Transactional
-    public void deleteLink(Long linkId) {
-        linkRepository.findLinkByLinkId(linkId)
+    public void deleteLink(Long linkId, Authentication authentication) {
+        Member member = (Member) authentication.getPrincipal();
+        Link link = linkRepository.findLinkByLinkId(linkId)
                 .orElseThrow(() -> new ApiException(ExceptionEnum.LINK_NOT_FOUND));
+        Long memberId = link.getProfile().getMember().getMemberId();
 
-        linkRepository.deleteByLinkId(linkId);
+        boolean isDelete = isAdmin(authentication) || member.getMemberId().equals(memberId);
+
+        if (isDelete) {
+            linkRepository.deleteByLinkId(linkId);
+        }
     }
 
     public Sort.Direction getSrotDirection(String strDirection){
@@ -205,5 +232,9 @@ public class ProfileService {
                 break;
         }
         return sortDirection;
+    }
+
+    public boolean isAdmin(Authentication authentication){
+        return authentication.getAuthorities().stream().anyMatch(authority -> authority.getAuthority().equals("ADMIN"));
     }
 }
