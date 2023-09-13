@@ -36,7 +36,7 @@ public class ProfileController {
     private final ProfileService profileService;
 
     @Operation(summary = "프로필 리스트 조회")
-    @GetMapping("/open/profiles")
+    @GetMapping("/profiles")
     public ApiResult<List<SelectProfileResponseDto>> getProfiles(@ModelAttribute SelectProfileListRequestDto dto) {
         Page<Profile> profiles = profileService.getAllProfile(dto);
         List<SelectProfileResponseDto> dtoList = profiles.stream()
@@ -47,7 +47,7 @@ public class ProfileController {
     }
 
     @Operation(summary = "프로필 조회")
-    @GetMapping("/open/profile/{profileId}")
+    @GetMapping("/{profileId}")
     public ApiResult<SelectProfileResponseDto> getProfile(@PathVariable Long profileId){
         Profile profile = profileService.getProfileByProfileId(profileId);
         SelectProfileResponseDto result = new SelectProfileResponseDto(profile);
@@ -120,8 +120,8 @@ public class ProfileController {
         return ApiResult.getResult(ApiResultType.SUCCESS, "링크 삭제", null);
     }
 
-//    @GetMapping("/open/profile/filmoName/{filmoName}")
-//@       Operation(summary = "Filmo로 프로필 리스트 조회")
+//    @GetMapping("/byfilmo/{filmoName}")
+//    @Operation(summary = "필모로 프로필 리스트 조회")
 //    public ApiResult<List<SelectProfileResponseDto>> findProfilesByFilmoName(@PathVariable String filmoName, @ModelAttribute SelectProfileListByFilmoRequestDto requestDto) {
 //        requestDto.setFilmoName(filmoName);
 //        Page<Profile> profiles = profileService.getProfileByFilmoName(requestDto);

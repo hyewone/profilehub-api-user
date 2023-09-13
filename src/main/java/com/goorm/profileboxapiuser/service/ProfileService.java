@@ -10,11 +10,13 @@ import com.goorm.profileboxcomm.entity.*;
 import com.goorm.profileboxcomm.exception.ApiException;
 import com.goorm.profileboxcomm.exception.ExceptionEnum;
 import com.goorm.profileboxcomm.repository.*;
+import com.goorm.profileboxcomm.repository.customRepositoryImple.CustomProfileRepositoryImple;
 import com.goorm.profileboxcomm.utils.FileHandler;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -30,27 +32,22 @@ import static java.util.stream.Collectors.toList;
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
-    private final MemberRepository memberRepository;
+    private final CustomProfileRepositoryImple customProfileRepository;
     private final ImageRepository imageRepository;
     private final VideoRepository videoRepository;
     private final FilmoRepository filmoRepository;
     private final LinkRepository linkRepository;
     private final FileHandler fileHandler;
 
-    public Page<Profile> getAllProfile(SelectProfileListRequestDto requestDto) {
-        int offset = requestDto.getOffset() ;
-        int limit = requestDto.getLimit();
-        String sortKey = requestDto.getSortKey();
-        Sort.Direction sortDirection = getSrotDirection(requestDto.getSortDirection());
-        return profileRepository.findAll(PageRequest.of(offset, limit, Sort.by(sortDirection, sortKey)));
+    public Page<Profile> getAllProfile(SelectProfileListRequestDto dto) {
+        int offset = dto.getOffset() ;
+        int limit = dto.getLimit();
+        String sortKey = dto.getSortKey();
+        Sort.Direction sortDirection = getSrotDirection(dto.getSortDirection());
+        Pageable pageable = PageRequest.of(offset, limit, Sort.by(sortDirection, sortKey));
+        return customProfileRepository.findProfiles(pageable, dto);
+//        return profileRepository.findAll(pageable);
     }
-
-//    public Page<Profile> getProfileByFilmoName(SelectProfileListByFilmoRequestDto requestDto) {
-//        int offset = requestDto.getOffset() < 1 ? 0 : requestDto.getOffset() - 1 ;
-//        int limit = requestDto.getLimit() < 1 ? 10 : requestDto.getLimit();
-//        String sortKey = requestDto.getSortKey();
-//        return profileRepository.findAll(PageRequest.of(offset, limit, Sort.by(sortKey)));
-//    }
 
     public Profile getProfileByProfileId(Long profileId) {
         return profileRepository.findProfileByProfileId(profileId)
@@ -83,9 +80,9 @@ public class ProfileService {
                 Image image = Image.createImage(dto, profile);
                 imageList.add(image);
             }
-            profileRepository.save(profile);
             imageRepository.saveAll(imageList);
             profile.setDefaultImageId(imageList.get(0).getImageId());
+            profileRepository.save(profile);
         }
 
         // 비디오 저장
@@ -126,6 +123,7 @@ public class ProfileService {
                 .orElseThrow(() -> new ApiException(ExceptionEnum.PROFILE_NOT_FOUND));
         profile.setTitle(profileDto.getTitle());
         profile.setContent(profileDto.getContent());
+        profile.setYnType(profileDto.getYnType());
         profileRepository.save(profile);
         return profile.getProfileId();
     }
@@ -217,6 +215,16 @@ public class ProfileService {
             linkRepository.deleteByLinkId(linkId);
         }
     }
+
+//    public Page<Profile> getProfileByFilmoName(SelectProfileListByFilmoRequestDto dto) {
+//        int offset = dto.getOffset() ;
+//        int limit = dto.getLimit();
+//        String sortKey = dto.getSortKey();
+//        Sort.Direction sortDirection = getSrotDirection();
+//        return customProfileRepository.findProfilesByFilmoTypeAndFilmoName(PageRequest.of(offset, limit, Sort.by(sortDirection, sortKey)),
+//                                                                            dto.getFilmoType().toString(),
+//                                                                            dto.getFilmoName());
+//    }
 
     public Sort.Direction getSrotDirection(String strDirection){
         Sort.Direction sortDirection = null;

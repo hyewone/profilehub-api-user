@@ -1,22 +1,14 @@
 package com.goorm.profileboxapiuser.auth;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.goorm.profileboxapiuser.service.MemberService;
 import com.goorm.profileboxcomm.auth.JwtProperties;
 import com.goorm.profileboxcomm.auth.JwtProvider;
 import com.goorm.profileboxcomm.entity.Member;
-import com.goorm.profileboxcomm.exception.ApiExceptionEntity;
-import com.goorm.profileboxcomm.exception.ExceptionEnum;
-import com.goorm.profileboxcomm.response.ApiResult;
-import com.goorm.profileboxcomm.response.ApiResultType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -35,14 +27,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 public class JwtAuthorizationFilter extends BasicAuthenticationFilter {
-
-    private final MemberService memberService;
     private final JwtProvider jwtProvider;
     private final RestTemplate restTemplate;
 
-    public JwtAuthorizationFilter(AuthenticationManager authenticationManager, MemberService memberService, JwtProvider jwtProvider, RestTemplate restTemplate) {
+    public JwtAuthorizationFilter(AuthenticationManager authenticationManager, JwtProvider jwtProvider, RestTemplate restTemplate) {
         super(authenticationManager);
-        this.memberService = memberService;
         this.jwtProvider = jwtProvider;
         this.restTemplate = restTemplate;
     }

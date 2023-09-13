@@ -1,7 +1,6 @@
 package com.goorm.profileboxapiuser.auth;
 
 
-import com.goorm.profileboxapiuser.service.MemberService;
 import com.goorm.profileboxcomm.auth.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +21,6 @@ import org.springframework.web.filter.CorsFilter;
 public class SecurityConfig {
 
     private final CorsFilter corsFilter;
-    private final MemberService memberService;
     private final AuthenticationConfiguration authenticationConfiguration;
     private final JwtProvider jwtProvider;
     private final RestTemplate restTemplate;
@@ -41,7 +39,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.csrf().disable()
                 .addFilter(corsFilter)
-                .addFilter(new JwtAuthorizationFilter(authenticationManager(), memberService, jwtProvider, restTemplate))
+                .addFilter(new JwtAuthorizationFilter(authenticationManager(), jwtProvider, restTemplate))
                 .formLogin().disable()
                 .httpBasic().disable()
                 .authorizeHttpRequests()
