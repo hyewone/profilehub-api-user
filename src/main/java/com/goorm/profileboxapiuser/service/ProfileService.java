@@ -12,6 +12,7 @@ import com.goorm.profileboxcomm.exception.ExceptionEnum;
 import com.goorm.profileboxcomm.repository.*;
 import com.goorm.profileboxcomm.repository.customRepositoryImple.CustomProfileRepositoryImple;
 import com.goorm.profileboxcomm.utils.FileHandler;
+import com.goorm.profileboxcomm.utils.Utils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -43,7 +44,7 @@ public class ProfileService {
         int offset = dto.getOffset() ;
         int limit = dto.getLimit();
         String sortKey = dto.getSortKey();
-        Sort.Direction sortDirection = getSrotDirection(dto.getSortDirection());
+        Sort.Direction sortDirection = Utils.getSrotDirection(dto.getSortDirection());
         Pageable pageable = PageRequest.of(offset, limit, Sort.by(sortDirection, sortKey));
         return customProfileRepository.findProfiles(pageable, dto);
 //        return profileRepository.findAll(pageable);
@@ -118,12 +119,12 @@ public class ProfileService {
     }
 
     @Transactional
-    public Long updateProfile(Long profileId, CreateProfileRequestDto profileDto, Member member) {
+    public Long updateProfile(Long profileId, CreateProfileRequestDto dto, Member member) {
         Profile profile = profileRepository.findProfileByProfileIdAndMember(profileId, member)
                 .orElseThrow(() -> new ApiException(ExceptionEnum.PROFILE_NOT_FOUND));
-        profile.setTitle(profileDto.getTitle());
-        profile.setContent(profileDto.getContent());
-        profile.setYnType(profileDto.getYnType());
+        profile.setTitle(dto.getTitle());
+        profile.setContent(dto.getContent());
+        profile.setYnType(dto.getYnType());
         profileRepository.save(profile);
         return profile.getProfileId();
     }
@@ -134,7 +135,7 @@ public class ProfileService {
         Profile profile = profileRepository.findProfileByProfileId(profileId)
                 .orElseThrow(() -> new ApiException(ExceptionEnum.PROFILE_NOT_FOUND));
         Long memberId = profile.getMember().getMemberId();
-        boolean isDelete = isAdmin(authentication) || member.getMemberId().equals(memberId);
+        boolean isDelete = Utils.isAdmin(authentication) || member.getMemberId().equals(memberId);
 
         if (isDelete) {
             imageRepository.findImagesByProfile(profile)
@@ -158,7 +159,7 @@ public class ProfileService {
                 .orElseThrow(() -> new ApiException(ExceptionEnum.IMAGE_NOT_FOUND));
         Long memberId = image.getProfile().getMember().getMemberId();
 
-        boolean isDelete = isAdmin(authentication) || member.getMemberId().equals(memberId);
+        boolean isDelete = Utils.isAdmin(authentication) || member.getMemberId().equals(memberId);
 
         if (isDelete) {
             imageRepository.deleteByImageId(imageId);
@@ -180,7 +181,7 @@ public class ProfileService {
                 .orElseThrow(() -> new ApiException(ExceptionEnum.VIDEO_NOT_FOUND));
         Long memberId = video.getProfile().getMember().getMemberId();
 
-        boolean isDelete = isAdmin(authentication) || member.getMemberId().equals(memberId);
+        boolean isDelete = Utils.isAdmin(authentication) || member.getMemberId().equals(memberId);
 
         if (isDelete) {
             fileHandler.deleteFile(video.getFilePath());
@@ -195,7 +196,7 @@ public class ProfileService {
                 .orElseThrow(() -> new ApiException(ExceptionEnum.FILMO_NOT_FOUND));
         Long memberId = filmo.getProfile().getMember().getMemberId();
 
-        boolean isDelete = isAdmin(authentication) || member.getMemberId().equals(memberId);
+        boolean isDelete = Utils.isAdmin(authentication) || member.getMemberId().equals(memberId);
 
         if (isDelete) {
             filmoRepository.deleteByFilmoId(filmoId);
@@ -209,40 +210,10 @@ public class ProfileService {
                 .orElseThrow(() -> new ApiException(ExceptionEnum.LINK_NOT_FOUND));
         Long memberId = link.getProfile().getMember().getMemberId();
 
-        boolean isDelete = isAdmin(authentication) || member.getMemberId().equals(memberId);
+        boolean isDelete = Utils.isAdmin(authentication) || member.getMemberId().equals(memberId);
 
         if (isDelete) {
             linkRepository.deleteByLinkId(linkId);
         }
-    }
-
-//    public Page<Profile> getProfileByFilmoName(SelectProfileListByFilmoRequestDto dto) {
-//        int offset = dto.getOffset() ;
-//        int limit = dto.getLimit();
-//        String sortKey = dto.getSortKey();
-//        Sort.Direction sortDirection = getSrotDirection();
-//        return customProfileRepository.findProfilesByFilmoTypeAndFilmoName(PageRequest.of(offset, limit, Sort.by(sortDirection, sortKey)),
-//                                                                            dto.getFilmoType().toString(),
-//                                                                            dto.getFilmoName());
-//    }
-
-    public Sort.Direction getSrotDirection(String strDirection){
-        Sort.Direction sortDirection = null;
-        switch (strDirection) {
-            case "ASC":
-                sortDirection = Sort.Direction.ASC;
-                break;
-            case "DESC":
-                sortDirection = Sort.Direction.DESC;
-                break;
-            default:
-                sortDirection = Sort.Direction.DESC;
-                break;
-        }
-        return sortDirection;
-    }
-
-    public boolean isAdmin(Authentication authentication){
-        return authentication.getAuthorities().stream().anyMatch(authority -> authority.getAuthority().equals("ADMIN"));
     }
 }

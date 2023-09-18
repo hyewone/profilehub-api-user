@@ -40,7 +40,7 @@ public class ProfileController {
     public ApiResult<List<SelectProfileResponseDto>> getProfiles(@ModelAttribute SelectProfileListRequestDto dto) {
         Page<Profile> profiles = profileService.getAllProfile(dto);
         List<SelectProfileResponseDto> dtoList = profiles.stream()
-                .map(o -> new SelectProfileResponseDto(o))
+                .map(o -> SelectProfileResponseDto.getDtoForList(o))
                 .collect(toList());
         SelectProfileListResponseDto result = new SelectProfileListResponseDto(profiles.getTotalPages(), profiles.getTotalElements(), dtoList);
         return ApiResult.getResult(ApiResultType.SUCCESS, "프로필 리스트 조회", result);
@@ -50,7 +50,7 @@ public class ProfileController {
     @GetMapping("/{profileId}")
     public ApiResult<SelectProfileResponseDto> getProfile(@PathVariable Long profileId){
         Profile profile = profileService.getProfileByProfileId(profileId);
-        SelectProfileResponseDto result = new SelectProfileResponseDto(profile);
+        SelectProfileResponseDto result = SelectProfileResponseDto.getDtoForDetail(profile);
         return ApiResult.getResult(ApiResultType.SUCCESS, "프로필 조회", result);
     }
 
@@ -72,11 +72,10 @@ public class ProfileController {
     @PreAuthorize("hasAnyAuthority('ACTOR')")
     @PatchMapping("/{profileId}")
     public ApiResult<SelectProfileResponseDto> updateProfile(@PathVariable Long profileId,
-                                                             @Valid @RequestPart(value = "data") CreateProfileRequestDto profileDto,
+                                                             @Valid @RequestPart(value = "data") CreateProfileRequestDto dto,
                                                             Authentication authentication
     ){
-        Member member = (Member) authentication.getPrincipal();
-        Long savedProfileId = profileService.updateProfile(profileId, profileDto, member);
+        Long savedProfileId = profileService.updateProfile(profileId, dto, (Member) authentication.getPrincipal());
         return ApiResult.getResult(ApiResultType.SUCCESS, "프로필 수정", savedProfileId);
     }
 
