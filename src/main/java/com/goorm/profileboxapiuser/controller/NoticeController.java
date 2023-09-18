@@ -36,7 +36,8 @@ public class NoticeController {
         List<SelectNoticeResponseDto> dtoList = notices.stream()
                 .map(o -> new SelectNoticeResponseDto(o))
                 .collect(Collectors.toList());
-        return ApiResult.getResult(ApiResultType.SUCCESS, "작품공고 리스트 조회", dtoList);
+        SelectNoticeListResponseDto result = new SelectNoticeListResponseDto(notices.getTotalPages(), notices.getTotalElements(), dtoList);
+        return ApiResult.getResult(ApiResultType.SUCCESS, "작품공고 리스트 조회", result);
     }
 
     @Operation(summary = "작품공고 조회")

@@ -22,6 +22,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -51,7 +52,7 @@ public class LikeService {
                     .orElseThrow(() -> new ApiException(ExceptionEnum.PROFILE_NOT_FOUND));
         }
         else if (dto.getLikeType().equals(LikeType.NOTICE)){
-            profileRepository.findProfileByProfileId(dto.getTargetId())
+            noticeRepository.findNoticeByNoticeId(dto.getTargetId())
                     .orElseThrow(() -> new ApiException(ExceptionEnum.NOTICE_NOT_FOUND));
         }
 
@@ -78,6 +79,17 @@ public class LikeService {
         String sortKey = dto.getSortKey();
         Sort.Direction sortDirection = getSrotDirection(dto.getSortDirection());
         return customLikeRepository.findAllLikeByCondition(PageRequest.of(offset, limit, Sort.by(sortDirection, sortKey)), dto.getLikeType().toString());
+    }
+
+    public Long getLikeIdByLikeTypeAndTargetIdAndMember(LikeType likeType, Long targetId, Authentication authentication){
+        Member member = (Member) authentication.getPrincipal();
+        Optional<Like> likeOptional = likeRepository.getLikeBylikeTypeAndTargetIdAndMember(likeType, targetId, member);
+
+        if (likeOptional.isPresent()) {
+            return likeOptional.get().getLikeId();
+        } else {
+            return 0L;
+        }
     }
 
     public Sort.Direction getSrotDirection(String strDirection){

@@ -6,6 +6,7 @@ import com.goorm.profileboxcomm.dto.like.request.SelectLikeListRequestDto;
 import com.goorm.profileboxcomm.dto.like.response.SelectLikeListResponseDto;
 import com.goorm.profileboxcomm.dto.like.response.SelectLikeResponseDto;
 import com.goorm.profileboxcomm.entity.Like;
+import com.goorm.profileboxcomm.enumeration.LikeType;
 import com.goorm.profileboxcomm.response.ApiResult;
 import com.goorm.profileboxcomm.response.ApiResultType;
 import io.swagger.v3.oas.annotations.Operation;
@@ -58,5 +59,15 @@ public class LikeController {
                 .collect(toList());
         SelectLikeListResponseDto result = new SelectLikeListResponseDto(likes.getTotalPages(), likes.getTotalElements(), dtoList);
         return ApiResult.getResult(ApiResultType.SUCCESS, "좋아요 리스트 조회", result);
+    }
+
+    @Operation(summary = "현재 사용자의 특정 게시물 좋아요 여부 조회")
+    @PreAuthorize("hasAnyAuthority('ADMIN','ACTOR','PRODUCER')")
+    @GetMapping("/{likeType}/{targetId}")
+    public ApiResult getLikeId(@PathVariable LikeType likeType,
+                               @PathVariable Long targetId,
+                               Authentication authentication) {
+        Long likeId = likeService.getLikeIdByLikeTypeAndTargetIdAndMember(likeType, targetId, authentication);
+        return ApiResult.getResult(ApiResultType.SUCCESS, "좋아요 여부 조회", likeId);
     }
 }
