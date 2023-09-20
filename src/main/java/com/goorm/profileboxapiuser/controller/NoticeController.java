@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,7 +35,7 @@ public class NoticeController {
     public ApiResult<List<SelectNoticeListResponseDto>> getNotices(@ModelAttribute SelectNoticeListRequsetDto dto ) {
         Page<Notice> notices = noticeService.getAllNoitce(dto);
         List<SelectNoticeResponseDto> dtoList = notices.stream()
-                .map(o -> new SelectNoticeResponseDto(o))
+                .map(o ->  SelectNoticeResponseDto.getDtoForList(o))
                 .collect(Collectors.toList());
         SelectNoticeListResponseDto result = new SelectNoticeListResponseDto(notices.getTotalPages(), notices.getTotalElements(), dtoList);
         return ApiResult.getResult(ApiResultType.SUCCESS, "작품공고 리스트 조회", result);
@@ -44,12 +45,13 @@ public class NoticeController {
     @GetMapping("/{noticeId}")
     public ApiResult<SelectNoticeResponseDto> getNotice(@PathVariable("noticeId") Long noticeId) {
         Notice notice = noticeService.getNoticeByNoticeId(noticeId);
-        SelectNoticeResponseDto result = new SelectNoticeResponseDto(notice);
+        SelectNoticeResponseDto result = SelectNoticeResponseDto.getDtoForDetail(notice);
         return ApiResult.getResult(ApiResultType.SUCCESS, "작품공고 조회", result);
     }
 
 
     @Operation(summary = "작품공고 등록")
+    @PreAuthorize("hasAnyAuthority('PRODUCER')")
     @PostMapping
     public ApiResult<Long> addNotice(@Valid @RequestBody CreateNoticeRequestDto dto, Authentication authentication) throws ParseException {
         Long noticeId = noticeService.addNotice(dto, authentication);
@@ -57,6 +59,7 @@ public class NoticeController {
     }
 
     @Operation(summary = "작품공고 수정")
+    @PreAuthorize("hasAnyAuthority('PRODUCER')")
     @PatchMapping("/{noticeId}")
     public ApiResult<Long> updateNotice(@PathVariable Long noticeId,
                                         @Valid @RequestPart(value = "data") CreateNoticeRequestDto dto,
@@ -66,6 +69,7 @@ public class NoticeController {
     }
 
     @Operation(summary = "작품공고 삭제")
+    @PreAuthorize("hasAnyAuthority('ADMIN','PRODUCER')")
     @DeleteMapping("/{noticeId}")
     public ApiResult deleteNotice (@PathVariable("noticeId") Long noticeId, Authentication authentication){
         noticeService.deleteNotice(noticeId, (Member) authentication.getPrincipal());

@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 
@@ -56,13 +57,17 @@ public class ProfileService {
     }
 
     // 1:1
-    public boolean existsProfileByMemberId(Member member) {
+    public boolean existsProfileByMember(Member member) {
         return profileRepository.existsProfileByMember(member);
+    }
+
+    public Optional<Profile> getProfileByMember(Member member) {
+        return profileRepository.findProfileByMember(member);
     }
 
     @Transactional
     public Long addProfile(CreateProfileRequestDto profileDto, List<MultipartFile> images, List<MultipartFile> videos, Member member) {
-        if(existsProfileByMemberId(member)){
+        if(existsProfileByMember(member)){
             throw new ApiException(ExceptionEnum.PROFILE_ALREADY_EXIST);
         }
 
