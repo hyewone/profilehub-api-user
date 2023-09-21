@@ -4,6 +4,8 @@ import com.goorm.profileboxcomm.dto.like.request.CreateLikeRequestDto;
 import com.goorm.profileboxcomm.dto.like.request.SelectLikeListRequestDto;
 import com.goorm.profileboxcomm.entity.Like;
 import com.goorm.profileboxcomm.entity.Member;
+import com.goorm.profileboxcomm.entity.Notice;
+import com.goorm.profileboxcomm.entity.Profile;
 import com.goorm.profileboxcomm.enumeration.LikeType;
 import com.goorm.profileboxcomm.enumeration.MemberType;
 import com.goorm.profileboxcomm.exception.ApiException;
@@ -22,6 +24,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -73,12 +76,20 @@ public class LikeService {
         }
     }
 
-    public Page<Like> getLikedProfiles(SelectLikeListRequestDto dto) {
+    public Page<Like> getLikes(SelectLikeListRequestDto dto) {
         int offset = dto.getOffset() ;
         int limit = dto.getLimit();
         String sortKey = dto.getSortKey();
         Sort.Direction sortDirection = getSrotDirection(dto.getSortDirection());
         return customLikeRepository.findAllLikeByCondition(PageRequest.of(offset, limit, Sort.by(sortDirection, sortKey)), dto.getLikeType().toString());
+    }
+
+    public List<Profile> getMyLikeProfiles(Member member) {
+        return customLikeRepository.findProfilesByMemberIdAndLikeType(member.getMemberId());
+    }
+
+    public List<Notice> getMyLikeNotices(Member member) {
+        return customLikeRepository.findNoticesByMemberIdAndLikeType(member.getMemberId());
     }
 
     public Long getLikeIdByLikeTypeAndTargetIdAndMember(LikeType likeType, Long targetId, Authentication authentication){

@@ -25,7 +25,8 @@ public class SecurityConfig {
     private final JwtProvider jwtProvider;
     private final RestTemplate restTemplate;
     private final String[] allowedUrls = {"/"
-                            , "/v1/open/**"
+                            , "/v1/profile/profiles"
+                            , "/v1/notice/notices"
                             , "/swagger-ui/**"
                             , "/swagger-resources/**"
                             , "/v3/api-docs/**"

@@ -75,5 +75,15 @@ public class NoticeController {
         noticeService.deleteNotice(noticeId, (Member) authentication.getPrincipal());
         return ApiResult.getResult(ApiResultType.SUCCESS, "작품공고 삭제", null);
     }
+
+    @Operation(summary = "내 작품공고 리스트 조회")
+    @GetMapping("/myNotices")
+    public ApiResult<List<SelectNoticeListResponseDto>> getMyNotices(Authentication authentication) {
+        List<Notice> notices = noticeService.getMyNotices((Member) authentication.getPrincipal());
+        List<SelectNoticeResponseDto> dtoList = notices.stream()
+                .map(o ->  SelectNoticeResponseDto.getDtoForList(o))
+                .collect(Collectors.toList());
+        return ApiResult.getResult(ApiResultType.SUCCESS, "내 작품공고 리스트 조회", dtoList);
+    }
 }
 

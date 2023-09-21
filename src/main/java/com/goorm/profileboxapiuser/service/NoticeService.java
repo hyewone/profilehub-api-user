@@ -7,6 +7,7 @@ import com.goorm.profileboxcomm.entity.Notice;
 import com.goorm.profileboxcomm.exception.ApiException;
 import com.goorm.profileboxcomm.exception.ExceptionEnum;
 import com.goorm.profileboxcomm.repository.NoticeRepository;
+import com.goorm.profileboxcomm.repository.customRepositoryImple.CustomNoticeRepositoryImple;
 import com.goorm.profileboxcomm.utils.Utils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -26,6 +28,7 @@ import java.text.ParseException;
 public class NoticeService {
 
     private final NoticeRepository noticeRepository;
+    private final CustomNoticeRepositoryImple customNoticeRepository;
 
     public Page<Notice> getAllNoitce(SelectNoticeListRequsetDto dto){
         int offset = dto.getOffset() ;
@@ -33,7 +36,11 @@ public class NoticeService {
         String sortKey = dto.getSortKey();
         Sort.Direction sortDirection = Utils.getSrotDirection(dto.getSortDirection());
         Pageable pageable = PageRequest.of(offset, limit, Sort.by(sortDirection, sortKey));
-        return noticeRepository.findAll(pageable);
+        return customNoticeRepository.findNotices(pageable, dto);
+    }
+
+    public List<Notice> getMyNotices(Member member){
+       return noticeRepository.findAllByMember(member);
     }
 
     public Notice getNoticeByNoticeId(Long noticeId){

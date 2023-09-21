@@ -48,7 +48,6 @@ public class ProfileService {
         Sort.Direction sortDirection = Utils.getSrotDirection(dto.getSortDirection());
         Pageable pageable = PageRequest.of(offset, limit, Sort.by(sortDirection, sortKey));
         return customProfileRepository.findProfiles(pageable, dto);
-//        return profileRepository.findAll(pageable);
     }
 
     public Profile getProfileByProfileId(Long profileId) {
