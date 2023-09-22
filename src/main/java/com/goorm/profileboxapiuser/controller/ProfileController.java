@@ -1,6 +1,7 @@
 package com.goorm.profileboxapiuser.controller;
 
 import com.goorm.profileboxapiuser.service.ProfileService;
+import com.goorm.profileboxcomm.dto.image.request.CreateImageRequestDto;
 import com.goorm.profileboxcomm.dto.profile.request.CreateProfileRequestDto;
 import com.goorm.profileboxcomm.dto.profile.request.SelectProfileListRequestDto;
 import com.goorm.profileboxcomm.dto.profile.response.SelectProfileListResponseDto;
@@ -9,6 +10,7 @@ import com.goorm.profileboxcomm.entity.Member;
 import com.goorm.profileboxcomm.entity.Profile;
 import com.goorm.profileboxcomm.response.ApiResult;
 import com.goorm.profileboxcomm.response.ApiResultType;
+import com.goorm.profileboxcomm.utils.FileHandler;
 import com.goorm.profileboxcomm.validator.ProfileImage;
 import com.goorm.profileboxcomm.validator.ProfileVideo;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +36,7 @@ import static java.util.stream.Collectors.toList;
 @Validated
 public class ProfileController {
     private final ProfileService profileService;
+    private final FileHandler fileHandler;
 
     @Operation(summary = "프로필 리스트 조회")
     @GetMapping("/profiles")
@@ -119,22 +122,14 @@ public class ProfileController {
         return ApiResult.getResult(ApiResultType.SUCCESS, "링크 삭제", null);
     }
 
-//    @GetMapping("/byfilmo/{filmoName}")
-//    @Operation(summary = "필모로 프로필 리스트 조회")
-//    public ApiResult<List<SelectProfileResponseDto>> findProfilesByFilmoName(@PathVariable String filmoName, @ModelAttribute SelectProfileListByFilmoRequestDto requestDto) {
-//        requestDto.setFilmoName(filmoName);
-//        Page<Profile> profiles = profileService.getProfileByFilmoName(requestDto);
-//        List<SelectProfileResponseDto> dtoList = profiles.stream()
-//                .map(o -> new SelectProfileResponseDto(o))
-//                .collect(toList());
-//        SelectProfileListResponseDto result = new SelectProfileListResponseDto(profiles.getTotalPages(), profiles.getTotalElements(), dtoList);
-//        return ApiResult.getResult(ApiResultType.SUCCESS, "프로필 리스트 조회(필모 이름)", result);
-//    }
-
-//    @PreAuthorize("hasAnyAuthority('ADMIN','PRODUCER','ACTOR')")
-
-//    @ApiResponses(value = {
-//            @ApiResponse(responseCode = "200", description = "successful operation", content = @Content(schema = @Schema(implementation = SelectProfileResponseDto.class))),
-//            @ApiResponse(responseCode = "400", description = "bad request operation", content = @Content(schema = @Schema(implementation = SelectProfileResponseDto.class)))
-//    })
+    @Operation(summary = "이미지 업로드용")
+    @PostMapping("/uploadImage")
+    public ApiResult<Long> imageUpload(@ProfileImage @RequestPart(value = "images") List<@Valid MultipartFile> images){
+        if (images != null & !images.get(0).getOriginalFilename().isEmpty()) {
+            List<CreateImageRequestDto> imageDtoList = images.stream()
+                    .map(o -> fileHandler.imageWrite(o))
+                    .collect(toList());
+        }
+        return ApiResult.getResult(ApiResultType.SUCCESS, "이미지 업로드용", null, HttpStatus.CREATED);
+    }
 }

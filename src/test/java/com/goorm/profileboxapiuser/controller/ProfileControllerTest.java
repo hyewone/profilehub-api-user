@@ -1,11 +1,8 @@
 package com.goorm.profileboxapiuser.controller;
 
 import com.goorm.profileboxapiuser.service.ProfileService;
-import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 public class ProfileControllerTest {
 
@@ -14,11 +11,11 @@ public class ProfileControllerTest {
     @Mock
     private ProfileService profileService;
 
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(new ProfileController(profileService)).build();
-    }
+//    @BeforeEach
+//    public void setUp() {
+//        MockitoAnnotations.openMocks(this);
+//        mockMvc = MockMvcBuilders.standaloneSetup(new ProfileController(profileService)).build();
+//    }
 
 //    @Test
 //    public void testGetProfiles() throws Exception {
